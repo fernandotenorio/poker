@@ -69,7 +69,7 @@ class PokerHand(object):
 			return 1
 		elif PokerHand.hand_value[self.hand] < PokerHand.hand_value[other.hand]:
 			return -1
-		elif PokerHand.hand_value[self.hand] ==  PokerHand.hand_value[other.hand]:
+		elif PokerHand.hand_value[self.hand] == PokerHand.hand_value[other.hand]:
 			# High card
 			if self.hand == 'High card':
 				cards_a = sorted(self.cards, reverse=True)
@@ -97,7 +97,7 @@ class PokerHand(object):
 				else:
 					kickers_hand = sorted([PokerCard(c.value, '-') for c in self.cards if c.value != pair_hand], reverse=True)
 					kickers_other = sorted([PokerCard(c.value, '-') for c in other.cards if c.value != pair_other], reverse=True)
-					
+
 					for a, b in zip(kickers_hand, kickers_other):
 						if a > b:
 							return 1
@@ -185,7 +185,6 @@ class PokerHand(object):
 
 
 
-
 	def classify(self):
 		n_suits = len(set(c.suit for c in self.cards))
 		cards = self.cards
@@ -235,33 +234,16 @@ class PokerHand(object):
 
 
 	@staticmethod
-	def random_hands():
+	def random_hand():
 		deck = PokerDeck()
-		hand1 = PokerHand([deck.pick() for _ in range(5)])
-		hand2 = PokerHand([deck.pick() for _ in range(5)])
-
-		print('Hand 1: {}'.format(hand1.hand))
-		print(hand1)
-		print('Hand 2: {}'.format(hand2.hand))
-		print(hand2)
-
-		winner = hand1.get_winner(hand2)
-		if winner == 1:
-			print('Hand 1 wins')
-		elif winner == -1:
-			print('Hand 2 wins')
-		else:
-			print('Draw')
-
+		return PokerHand([deck.pick() for _ in range(5)])
 
 
 if __name__ == '__main__':
-	d = PokerDeck()
-	hand1 = PokerHand([PokerCard(10, 'Spades'), PokerCard(11, 'Spades'), PokerCard(12, 'Spades'), PokerCard(13, 'Spades'), PokerCard(1, 'Spades')])
-	hand2 = PokerHand([PokerCard(1, 'Spades'), PokerCard(2, 'Spades'), PokerCard(3, 'Spades'), PokerCard(4, 'Spades'), PokerCard(5, 'Spades')])
-	hand3 = PokerHand([PokerCard(1, 'Clubs'), PokerCard(1, 'Clubs'), PokerCard(1, 'Clubs'), PokerCard(1, 'Clubs'), PokerCard(13, 'Clubs')])
-	
-	PokerHand.random_hands()
+	hands = []
+	for _ in range(10000):
+		hands.append(PokerHand.random_hand().classify())
+	print(Counter(hands))
 	
 	
 
