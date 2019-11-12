@@ -28,6 +28,8 @@ class PokerMatch(object):
 		self.pot = 0
 		self.deck = PokerDeck()
 		self.communityCards = []
+		self.history = {'preflop': [], 'flop': [], 'turn': [], 'river': [], 'community_cards': {'flop': [], 'turn': [], 'river': []}}
+		PokerMatch.MAX_RAISES = 4
 
 		for _ in range(2):
 			for p in self.players:
@@ -74,7 +76,7 @@ class PokerMatch(object):
 
 	def preflop(self):
 		done = False				
-		_, currentPlayer = self.get_player_to_left(self.players[self.button_idx])		
+		_, currentPlayer = self.get_player_to_left(self.players[self.bb_idx])		
 		current_bet = self.bigBlind
 		folded = 0  
 		contributed = []
@@ -90,43 +92,59 @@ class PokerMatch(object):
 
 		# idx of player that can close the round
 		end_round_idx = self.bb_idx
+		n_raises = 0
 
 		while not done:
-			p_idx = self.players.index(currentPlayer)
+			p_idx = self.players.index(currentPlayer)			
 			
 			if contributed[p_idx] == current_bet:				
-				act = currentPlayer.act(['check', 'raise'])
+				act = currentPlayer.act(['check', 'raise'] if n_raises < PokerMatch.MAX_RAISES else ['check'])
 
-				if act == 'raise':					
+				if act == 'raise':
+					n_raises+= 1
 					amount_raise = 1 * self.bigBlind
 					raise_to = current_bet + amount_raise
 					current_bet = raise_to
 					contributed[p_idx]+= amount_raise					
 					end_round_idx, _ = self.get_player_to_right(currentPlayer)
-					print('{} raises to {}'.format(currentPlayer.name, raise_to))
+					str_log = '{} raises to {}'.format(currentPlayer.name, raise_to)
+					self.history['preflop'].append(str_log)
+					#print(str_log)
 				elif act =='check':
-					print('{} Checks'.format(currentPlayer.name))
+					str_log = '{} Checks'.format(currentPlayer.name)
+					self.history['preflop'].append(str_log)
+					#print(str_log)
 			else:
 				amount_call = current_bet - contributed[p_idx]
-				act = currentPlayer.act(['call', 'raise', 'fold'])
+				act = currentPlayer.act(['call', 'raise', 'fold'] if n_raises < PokerMatch.MAX_RAISES else ['call', 'fold'])
 
 				if act == 'call':
 					contributed[p_idx]+= amount_call
-					print('{} Calls {}'.format(currentPlayer.name, amount_call))
-				elif act == 'raise':					
+					str_log = '{} Calls {}'.format(currentPlayer.name, amount_call)
+					self.history['preflop'].append(str_log)
+					#print(str_log)
+				elif act == 'raise':
+					n_raises+= 1					
 					amount_raise = 1 * self.bigBlind
 					raise_to = current_bet + amount_raise
 					current_bet = raise_to
 					contributed[p_idx]+= amount_call + amount_raise					
 					end_round_idx, _ = self.get_player_to_right(currentPlayer)
-					print('{} raises to {}'.format(currentPlayer.name, raise_to))
+					str_log = '{} raises to {}'.format(currentPlayer.name, raise_to)
+					self.history['preflop'].append(str_log)
+					#print(str_log)
 				elif act == 'fold':
 					currentPlayer.is_out = True
 					folded+= 1
-					print('{} folds'.format(currentPlayer.name))
+					str_log = '{} folds'.format(currentPlayer.name)
+					self.history['preflop'].append(str_log)
+					#print(str_log)
 
 
 			if folded == self.nplayers - 1:
+				# exiting round, updating pot size
+				self.pot+= sum(contributed)
+				self.history['preflop'].append(self.pot)
 				return [p for p in self.players if not p.is_out], contributed
 						
 			if p_idx == end_round_idx:
@@ -134,27 +152,33 @@ class PokerMatch(object):
 			else:
 				_, currentPlayer = self.get_player_to_left(currentPlayer)
 
+		# exiting round, updating pot size
+		self.pot+= sum(contributed)
+		self.history['preflop'].append(self.pot)
 		return [p for p in self.players if not p.is_out], contributed
 
 
 
-	def flop(self, cc):
+	def flop(self, cc, round_name):
 		done = False				
-		_, currentPlayer = self.get_player_to_left(self.players[self.bb_idx])
+		_, currentPlayer = self.get_player_to_left(self.players[self.button_idx])
 		current_bet = None
 		folded = 0  
 		contributed = [0] * self.nplayers
 
 		# idx of player that can close the round
 		end_round_idx, _ = self.get_player_to_right(currentPlayer)
+		n_raises = 0
 
 		# community cards
 		for i in range(cc):
-			self.communityCards.append(self.deck.pick())
+			card = self.deck.pick()
+			self.communityCards.append(card)
+			self.history['community_cards'][round_name].append(str(card))
 
 
 		while not done:
-			p_idx = self.players.index(currentPlayer)
+			p_idx = self.players.index(currentPlayer)			
 			
 			if current_bet is None:
 				act = currentPlayer.act(['bet', 'check'])
@@ -163,30 +187,44 @@ class PokerMatch(object):
 					current_bet = self.bigBlind
 					contributed[p_idx]+= current_bet
 					end_round_idx, _ = self.get_player_to_right(currentPlayer)
-					print('{} bets {}'.format(currentPlayer.name, current_bet))
+					str_log = '{} bets {}'.format(currentPlayer.name, current_bet)
+					self.history[round_name].append(str_log)
+					#print('{} bets {}'.format(currentPlayer.name, current_bet))
 				elif act =='check':
-					print('{} Checks'.format(currentPlayer.name))
+					str_log = '{} Checks'.format(currentPlayer.name)
+					self.history[round_name].append(str_log)
+					#print('{} Checks'.format(currentPlayer.name))
 			else:
 				amount_call = current_bet - contributed[p_idx]
-				act = currentPlayer.act(['call', 'raise', 'fold'])
+				act = currentPlayer.act(['call', 'raise', 'fold'] if n_raises < PokerMatch.MAX_RAISES else ['call', 'fold'])
 
 				if act == 'call':
 					contributed[p_idx]+= amount_call
-					print('{} Calls {}'.format(currentPlayer.name, amount_call))
-				elif act == 'raise':					
+					str_log = '{} Calls {}'.format(currentPlayer.name, amount_call)
+					self.history[round_name].append(str_log)
+					#print('{} Calls {}'.format(currentPlayer.name, amount_call))
+				elif act == 'raise':
+					n_raises+= 1					
 					amount_raise = 1 * self.bigBlind
 					raise_to = current_bet + amount_raise
 					current_bet = raise_to
 					contributed[p_idx]+= amount_call + amount_raise					
 					end_round_idx, _ = self.get_player_to_right(currentPlayer)
-					print('{} raises to {}'.format(currentPlayer.name, raise_to))
+					str_log = '{} raises to {}'.format(currentPlayer.name, raise_to)
+					self.history[round_name].append(str_log)
+					#print('{} raises to {}'.format(currentPlayer.name, raise_to))
 				elif act == 'fold':
 					currentPlayer.is_out = True
 					folded+= 1
-					print('{} folds'.format(currentPlayer.name))
+					str_log = '{} folds'.format(currentPlayer.name)
+					self.history[round_name].append(str_log)
+					#print('{} folds'.format(currentPlayer.name))
 
 
 			if folded == self.nplayers - 1:
+				# exiting round, updating pot size
+				self.pot+= sum(contributed)
+				self.history[round_name].append(self.pot)
 				return [p for p in self.players if not p.is_out], contributed
 						
 			if p_idx == end_round_idx:
@@ -194,48 +232,40 @@ class PokerMatch(object):
 			else:
 				_, currentPlayer = self.get_player_to_left(currentPlayer)
 
-
+		# exiting round, updating pot size
+		self.pot+= sum(contributed)
+		self.history[round_name].append(self.pot)
 		return [p for p in self.players if not p.is_out], contributed
 
 
 
+	def turn(self):
+		return self.flop(cc=1, round_name='turn')
+
+
+	def river(self):
+		return self.flop(cc=1, round_name='river')
+
 
 if __name__ == '__main__':
-	
-	# for p in match.players:
-	# 	print(p.name)
-	# 	for c in p.cards:
-	# 		print(c)
-	# 	print('==='*5)
-
 	for _ in range(1):
-		print('Preflop round')
-		match = PokerMatch(3)
+		match = PokerMatch(3)	
 		players, x = match.preflop()
-		assert len(players) >= 1, 'Error in number of players'
-		print([str(p) for p in players], x)
+		assert len(players) >= 1, 'Error in number of players'		
 
-		if len(players) > 1:
-			print('Flop round')
-			players, x = match.flop(3)
+		if len(players) > 1:			
+			players, x = match.flop(3, 'flop')
 			assert len(players) >= 1, 'Error in number of players'
-			print([str(p) for p in players], x)
-			print([str(c) for c in match.communityCards])
-
-		if len(players) > 1:
-			print('Turn round')
-			players, x = match.flop(1)
+						
+		if len(players) > 1:			
+			players, x = match.turn()
 			assert len(players) >= 1, 'Error in number of players'
-			print([str(p) for p in players], x)
-			print([str(c) for c in match.communityCards])
-
-		if len(players) > 1:
-			print('River round')
-			players, x = match.flop(1)
+						
+		if len(players) > 1:			
+			players, x = match.river()
 			assert len(players) >= 1, 'Error in number of players'
-			print([str(p) for p in players], x)
-			print([str(c) for c in match.communityCards])
-
+						
+		print(match.history)		
 		print('========'*10)
 	
 
