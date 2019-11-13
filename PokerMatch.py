@@ -8,7 +8,6 @@ class PokerPlayer(object):
 		self.is_out = False
 		self.cards = []
 
-
 	def act(self, options):		
 		#return choice(options)
 		return choice([o for o in options if o != 'fold'])
@@ -32,15 +31,22 @@ class PokerMatch(object):
 		self.history = {'preflop': [], 'flop': [], 'turn': [], 'river': [], 'community_cards': {'flop': [], 'turn': [], 'river': []}}
 		PokerMatch.MAX_RAISES = 4
 
-		for _ in range(2):
-			for p in self.players:
-				p.cards.append(self.deck.pick())
-
 
 	def rotate(self):
 		self.button_idx = (self.button_idx + 1) % self.nplayers
 		self.sb_idx = (self.sb_idx + 1) % self.nplayers
 		self.bb_idx = (self.bb_idx + 1) % self.nplayers
+
+		# reset
+		self.pot = 0
+		self.deck = PokerDeck()
+		self.communityCards = []
+		self.history = {'preflop': [], 'flop': [], 'turn': [], 'river': [], 'community_cards': {'flop': [], 'turn': [], 'river': []}}
+
+		for p in self.players:
+			p.is_out = False
+			p.cards = []
+
 
 
 	# def get_player_to_left(self, player):
@@ -82,6 +88,12 @@ class PokerMatch(object):
 		folded = 0  
 		contributed = []
 
+		# player cards
+		for _ in range(2):
+			for p in self.players:
+				p.cards.append(self.deck.pick())
+
+		# blinds
 		for i in range(self.nplayers):
 			if i == self.sb_idx:
 				contributed.append(self.smallBlind)
@@ -109,12 +121,10 @@ class PokerMatch(object):
 					contributed[p_idx]+= amount_raise					
 					end_round_idx, _ = self.get_player_to_right(currentPlayer)
 					str_log = '{} raises to {}'.format(currentPlayer.name, raise_to)
-					self.history['preflop'].append(str_log)
-					#print(str_log)
+					self.history['preflop'].append(str_log)					
 				elif act =='check':
 					str_log = '{} Checks'.format(currentPlayer.name)
-					self.history['preflop'].append(str_log)
-					#print(str_log)
+					self.history['preflop'].append(str_log)					
 			else:
 				amount_call = current_bet - contributed[p_idx]
 				act = currentPlayer.act(['call', 'raise', 'fold'] if n_raises < PokerMatch.MAX_RAISES else ['call', 'fold'])
@@ -122,8 +132,7 @@ class PokerMatch(object):
 				if act == 'call':
 					contributed[p_idx]+= amount_call
 					str_log = '{} Calls {}'.format(currentPlayer.name, amount_call)
-					self.history['preflop'].append(str_log)
-					#print(str_log)
+					self.history['preflop'].append(str_log)					
 				elif act == 'raise':
 					n_raises+= 1					
 					amount_raise = 1 * self.bigBlind
@@ -132,14 +141,12 @@ class PokerMatch(object):
 					contributed[p_idx]+= amount_call + amount_raise					
 					end_round_idx, _ = self.get_player_to_right(currentPlayer)
 					str_log = '{} raises to {}'.format(currentPlayer.name, raise_to)
-					self.history['preflop'].append(str_log)
-					#print(str_log)
+					self.history['preflop'].append(str_log)					
 				elif act == 'fold':
 					currentPlayer.is_out = True
 					folded+= 1
 					str_log = '{} folds'.format(currentPlayer.name)
-					self.history['preflop'].append(str_log)
-					#print(str_log)
+					self.history['preflop'].append(str_log)					
 
 
 			if folded == self.nplayers - 1:
@@ -189,12 +196,10 @@ class PokerMatch(object):
 					contributed[p_idx]+= current_bet
 					end_round_idx, _ = self.get_player_to_right(currentPlayer)
 					str_log = '{} bets {}'.format(currentPlayer.name, current_bet)
-					self.history[round_name].append(str_log)
-					#print('{} bets {}'.format(currentPlayer.name, current_bet))
+					self.history[round_name].append(str_log)					
 				elif act =='check':
 					str_log = '{} Checks'.format(currentPlayer.name)
-					self.history[round_name].append(str_log)
-					#print('{} Checks'.format(currentPlayer.name))
+					self.history[round_name].append(str_log)					
 			else:
 				amount_call = current_bet - contributed[p_idx]
 				act = currentPlayer.act(['call', 'raise', 'fold'] if n_raises < PokerMatch.MAX_RAISES else ['call', 'fold'])
@@ -202,8 +207,7 @@ class PokerMatch(object):
 				if act == 'call':
 					contributed[p_idx]+= amount_call
 					str_log = '{} Calls {}'.format(currentPlayer.name, amount_call)
-					self.history[round_name].append(str_log)
-					#print('{} Calls {}'.format(currentPlayer.name, amount_call))
+					self.history[round_name].append(str_log)					
 				elif act == 'raise':
 					n_raises+= 1					
 					amount_raise = 1 * self.bigBlind
@@ -212,14 +216,12 @@ class PokerMatch(object):
 					contributed[p_idx]+= amount_call + amount_raise					
 					end_round_idx, _ = self.get_player_to_right(currentPlayer)
 					str_log = '{} raises to {}'.format(currentPlayer.name, raise_to)
-					self.history[round_name].append(str_log)
-					#print('{} raises to {}'.format(currentPlayer.name, raise_to))
+					self.history[round_name].append(str_log)					
 				elif act == 'fold':
 					currentPlayer.is_out = True
 					folded+= 1
 					str_log = '{} folds'.format(currentPlayer.name)
-					self.history[round_name].append(str_log)
-					#print('{} folds'.format(currentPlayer.name))
+					self.history[round_name].append(str_log)					
 
 
 			if folded == self.nplayers - 1:
@@ -296,8 +298,9 @@ def decide_winner(players, community_cards):
 
 
 if __name__ == '__main__':
-	for _ in range(1000):
-		match = PokerMatch(3)	
+	match = PokerMatch(3)
+	for _ in range(100):
+		#match = PokerMatch(3)	
 		players, x = match.preflop()
 		
 		if len(players) > 1:			
@@ -319,6 +322,7 @@ if __name__ == '__main__':
 			print('Winners')
 			print([str(winner) for winner in winners])
 							
-		print(match.history)		
+		print(match.history)
+		match.rotate()		
 		print('========'*20)
 	
