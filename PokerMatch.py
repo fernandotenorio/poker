@@ -9,20 +9,48 @@ class PokerPlayer(object):
 		self.cards = []
 
 	def act(self, options):		
-		#return choice(options)
-		return choice([o for o in options if o != 'fold'])
+		pass		
 
 	def __str__(self):
 		return self.name
 
+
+class AIPlayer(PokerPlayer):
+	def __init__(self, name):
+		super().__init__(name)
+
+	def act(self, options):
+		#return choice([o for o in options if o != 'fold'])
+		return choice(options)
+
+
+class HumanPlayer(PokerPlayer):
+	def __init__(self, name):
+		super().__init__(name)
+
+	def act(self, options):
+		print('Your cards:')
+		print([str(c) for c in self.cards])
+
+		print('Choose an action:')
+		print(options)
+
+		while True:
+			opt = str(input()).lower()
+			if opt in options:
+				return opt
+			else:
+				print('Invalid action, try again:')
+				print(options)
+
 	
 class PokerMatch(object):
-	def __init__(self, nplayers):
-		self.nplayers = nplayers
+	def __init__(self, players):
+		self.nplayers = len(players)
 		self.button_idx = 0
 		self.sb_idx = 1
 		self.bb_idx = 2		
-		self.players = [PokerPlayer('player' + str(i)) for i in range(nplayers)]
+		self.players = players#[PokerPlayer('player' + str(i)) for i in range(nplayers)]
 		self.smallBlind = 1
 		self.bigBlind = 2 * self.smallBlind
 		self.pot = 0
@@ -121,9 +149,12 @@ class PokerMatch(object):
 					contributed[p_idx]+= amount_raise					
 					end_round_idx, _ = self.get_player_to_right(currentPlayer)
 					str_log = '{} raises to {}'.format(currentPlayer.name, raise_to)
+					print(str_log)
+					print('Pot {}'.format(sum(contributed)))
 					self.history['preflop'].append(str_log)					
 				elif act =='check':
 					str_log = '{} Checks'.format(currentPlayer.name)
+					print(str_log)
 					self.history['preflop'].append(str_log)					
 			else:
 				amount_call = current_bet - contributed[p_idx]
@@ -132,6 +163,8 @@ class PokerMatch(object):
 				if act == 'call':
 					contributed[p_idx]+= amount_call
 					str_log = '{} Calls {}'.format(currentPlayer.name, amount_call)
+					print(str_log)
+					print('Pot {}'.format(sum(contributed)))
 					self.history['preflop'].append(str_log)					
 				elif act == 'raise':
 					n_raises+= 1					
@@ -140,12 +173,15 @@ class PokerMatch(object):
 					current_bet = raise_to
 					contributed[p_idx]+= amount_call + amount_raise					
 					end_round_idx, _ = self.get_player_to_right(currentPlayer)
-					str_log = '{} raises to {}'.format(currentPlayer.name, raise_to)
+					str_log = '{} raises to {}'.format(currentPlayer.name, raise_to)					
+					print(str_log)
+					print('Pot {}'.format(sum(contributed)))
 					self.history['preflop'].append(str_log)					
 				elif act == 'fold':
 					currentPlayer.is_out = True
 					folded+= 1
 					str_log = '{} folds'.format(currentPlayer.name)
+					print(str_log)
 					self.history['preflop'].append(str_log)					
 
 
@@ -184,6 +220,8 @@ class PokerMatch(object):
 			self.communityCards.append(card)
 			self.history['community_cards'][round_name].append(str(card))
 
+		print('{}: Community cards:'.format(round_name))
+		print([str(c) for c in self.communityCards])
 
 		while not done:
 			p_idx = self.players.index(currentPlayer)			
@@ -196,9 +234,11 @@ class PokerMatch(object):
 					contributed[p_idx]+= current_bet
 					end_round_idx, _ = self.get_player_to_right(currentPlayer)
 					str_log = '{} bets {}'.format(currentPlayer.name, current_bet)
+					print(str_log)
 					self.history[round_name].append(str_log)					
 				elif act =='check':
 					str_log = '{} Checks'.format(currentPlayer.name)
+					print(str_log)
 					self.history[round_name].append(str_log)					
 			else:
 				amount_call = current_bet - contributed[p_idx]
@@ -207,6 +247,7 @@ class PokerMatch(object):
 				if act == 'call':
 					contributed[p_idx]+= amount_call
 					str_log = '{} Calls {}'.format(currentPlayer.name, amount_call)
+					print(str_log)
 					self.history[round_name].append(str_log)					
 				elif act == 'raise':
 					n_raises+= 1					
@@ -216,11 +257,13 @@ class PokerMatch(object):
 					contributed[p_idx]+= amount_call + amount_raise					
 					end_round_idx, _ = self.get_player_to_right(currentPlayer)
 					str_log = '{} raises to {}'.format(currentPlayer.name, raise_to)
+					print(str_log)
 					self.history[round_name].append(str_log)					
 				elif act == 'fold':
 					currentPlayer.is_out = True
 					folded+= 1
 					str_log = '{} folds'.format(currentPlayer.name)
+					print(str_log)
 					self.history[round_name].append(str_log)					
 
 
@@ -298,31 +341,48 @@ def decide_winner(players, community_cards):
 
 
 if __name__ == '__main__':
-	match = PokerMatch(3)
+	match = PokerMatch([HumanPlayer('Fernando Mir'), AIPlayer('AI-1'), AIPlayer('AI-2')])
+
 	for _ in range(100):
-		#match = PokerMatch(3)	
+		print('======'*20)
 		players, x = match.preflop()
 		
 		if len(players) > 1:			
-			players, x = match.flop(3, 'flop')		
+			players, x = match.flop(3, 'flop')
+		else:
+			print('Winner: {}'.format(players[0].name))
+			match.rotate()
+			continue
 						
 		if len(players) > 1:			
-			players, x = match.turn()		
+			players, x = match.turn()
+		else:
+			print('Winner: {}'.format(players[0].name))
+			match.rotate()
+			continue		
 						
 		if len(players) > 1:			
 			players, x = match.river()
 
-			winners = decide_winner(match.players, match.communityCards)							
+			if len(players) > 1:
+				winners = decide_winner(match.players, match.communityCards)								
 
-			print('Community cards:')
-			print([str(c) for c in match.communityCards])
-			for i in range(len(match.players)):
-				print('Player {} cards:'.format(i))
-				print([str(c) for c in match.players[i].cards])
-			print('Winners')
-			print([str(winner) for winner in winners])
+				for p in match.players:
+					print('{} cards:'.format(p.name))
+					print([str(c) for c in p.cards])
+
+				print('Winners:')
+				print([str(winner) for winner in winners])
+			else:
+				print('Winner: {}'.format(players[0].name))
+				match.rotate()
+				continue
+		else:
+			print('Winner: {}'.format(players[0].name))
+			match.rotate()
+			continue
+
 							
 		print(match.history)
 		match.rotate()		
-		print('========'*20)
 	
