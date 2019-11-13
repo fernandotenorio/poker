@@ -4,13 +4,15 @@ from collections import Counter
 class Card(object):
 	def __init__(self, value, suit):
 		self.value = value
-		self.suit = suit
+		self.suit = suit		
+		Card.SUIT_STR = {'Clubs': '\u2663', 'Hearts': '\u2665', 'Diamonds': '\u2666', 'Spades': '\u2660'}
+		Card.VALUE_STR = {1:'A', 2:'2', 3:'3', 4:'4', 5:'5', 6:'6', 7:'7', 8:'8', 9:'9', 10:'10', 11:'J', 12:'Q', 13:'K'}
 
 	def __eq__(self, other):
 		return self.value == other.value
 
-	def __str__(self):
-		return '{} of {}'.format(self.value, self.suit)
+	def __str__(self):		
+		return '{}{}'.format(Card.VALUE_STR[self.value], Card.SUIT_STR[self.suit])
 
 	
 class PokerCard(Card):
@@ -25,7 +27,6 @@ class PokerCard(Card):
 		else:
 			return self.value > other.value
 			
-
 
 class PokerDeck(object):
 	def __init__(self):
@@ -63,6 +64,7 @@ class PokerHand(object):
 								'Flush': 6, 'Straight': 5, 'Three of a kind': 4, 'Two pair': 3, 'Pair': 2, 'High card': 1}
 
 		self.hand = self.classify()
+
 
 	def get_winner(self, other):
 		if PokerHand.hand_value[self.hand] > PokerHand.hand_value[other.hand]:

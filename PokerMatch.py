@@ -1,5 +1,6 @@
 from Deck import *
 from random import choice
+import itertools
 
 class PokerPlayer(object):
 	def __init__(self, name):
@@ -10,7 +11,7 @@ class PokerPlayer(object):
 
 	def act(self, options):		
 		#return choice(options)
-		return choice(options)
+		return choice([o for o in options if o != 'fold'])
 
 	def __str__(self):
 		return self.name
@@ -247,34 +248,77 @@ class PokerMatch(object):
 		return self.flop(cc=1, round_name='river')
 
 
+def get_strongest_hand(player, community_cards):	
+	combs = list(itertools.combinations(player.cards + community_cards, 5))
+	hand_values = []
+	hands = []
+
+	for c in combs:
+		hand = PokerHand(c)
+		hands.append(hand)
+		hand_type = hand.classify()		
+		hand_values.append(PokerHand.hand_value[hand_type])
+		
+	max_val = max(hand_values)
+	tied_hands = [hands[i] for i in range(len(hand_values)) if hand_values[i] == max_val]	
+
+	if len(tied_hands) == 1:
+		return tied_hands
+	else:
+		combs = list(itertools.combinations(tied_hands, 2))
+		wins = {}
+
+		for a, b in combs:
+			winner = a.get_winner(b)
+			wins[str(a)] = wins.get(str(a), 0) + winner
+			wins[str(b)] = wins.get(str(b), 0) - winner
+
+		max_val = max(wins.values())
+		best = [h for h in tied_hands if wins[str(h)] == max_val]
+		return best
+
+
+def decide_winner(players, community_cards):
+	strongest_hand = [get_strongest_hand(p, community_cards)[0] for p in players]	
+	combs = list(itertools.combinations(strongest_hand, 2))
+	wins = {}
+
+	for a, b in combs:
+		winner = a.get_winner(b)
+		wins[str(a)] = wins.get(str(a), 0) + winner
+		wins[str(b)] = wins.get(str(b), 0) - winner
+
+	max_val = max(wins.values())
+	winning_hands = [h for h in strongest_hand if wins[str(h)] == max_val]
+
+	winners = [players[i] for i, hand in enumerate(strongest_hand) if hand in winning_hands]
+	return winners
+
+
 if __name__ == '__main__':
-	for _ in range(1):
+	for _ in range(1000):
 		match = PokerMatch(3)	
 		players, x = match.preflop()
-		assert len(players) >= 1, 'Error in number of players'		
-
+		
 		if len(players) > 1:			
-			players, x = match.flop(3, 'flop')
-			assert len(players) >= 1, 'Error in number of players'
+			players, x = match.flop(3, 'flop')		
 						
 		if len(players) > 1:			
-			players, x = match.turn()
-			assert len(players) >= 1, 'Error in number of players'
+			players, x = match.turn()		
 						
 		if len(players) > 1:			
 			players, x = match.river()
-			assert len(players) >= 1, 'Error in number of players'
-						
+
+			winners = decide_winner(match.players, match.communityCards)							
+
+			print('Community cards:')
+			print([str(c) for c in match.communityCards])
+			for i in range(len(match.players)):
+				print('Player {} cards:'.format(i))
+				print([str(c) for c in match.players[i].cards])
+			print('Winners')
+			print([str(winner) for winner in winners])
+							
 		print(match.history)		
-		print('========'*10)
+		print('========'*20)
 	
-
-
-
-
-
-# 	     D
-
-#  P			SB
-
-#    UTG   BB
