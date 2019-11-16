@@ -1,6 +1,7 @@
 import sys
 import pygame
 import time
+import math
 
 class BorderedButton(object):
     def __init__(self, text, pos, font, color, padding, draw_border):        
@@ -29,10 +30,39 @@ class BorderedButton(object):
         py = 2*self.padding
 
         self.create()
-        context.blit(self.text_obj, self.text_rect)
+        context.blit(self.text_obj, self.text_rect)        
 
         if self.draw_border:
             pygame.draw.rect(context, self.color, [x - self.padding, y - self.padding, w + 2*px, h + 2*py], 2)
+
+
+class PlayerHUD(object):
+	def __init__(self, player, pos, size, font, fontSize, acolor, scolor, padding):
+		self.player = player
+		self.pos = pos
+		self.size = size
+		self.font = font
+		self.fontSize = fontSize
+		self.actionColor = acolor
+		self.stackColor = scolor
+		self.text = []
+		self.labels = []
+		self.padding = padding
+
+	def set_text(self, text):
+		self.text = text
+		self.labels = []
+
+		self.labels.append(self.font.render(self.text[0], True, self.stackColor))
+		self.labels.append(self.font.render(self.text[1], True, self.actionColor))
+
+	def render(self, context):
+		pygame.draw.rect(context, self.stackColor, (self.pos[0] , self.pos[1], self.size[0], self.size[1]), 2)
+		y = self.pos[1]
+
+		for i in range(len(self.labels)):
+			lb = self.labels[i]
+			context.blit(lb, (self.padding[0] + self.pos[0], self.padding[1] + y + i * self.fontSize, self.size[0], self.size[1]))
 
 
 class SceneManager(object):
@@ -61,26 +91,25 @@ class Scene(object):
 		raise NotImplementedError
 
 
-class FakeScene(Scene):
-	def __init__(self, size):
+class PokerTable(Scene):
+	def __init__(self, size, players):
 		super().__init__(size)
-		self.fontButton = pygame.font.SysFont(pygame.font.get_default_font(), 64)
-		self.button = BorderedButton('Game Button', (self.width/2, self.height/2), self.fontButton, (255, 0, 0), 3, True)
+		self.font = pygame.font.SysFont(pygame.font.get_default_font(), 24)
+		self.players = players
 
-	def render(self, display):
-		import math
+	def render(self, display):		
 		PI = math.pi
 		display.fill((0, 150, 0))	
 		#self.button.render(display)
 		x0 = self.width * 0.2
-		y0 = self.height * 0.2
+		y0 = self.height * 0.3
 		w = self.width -2*x0
 		h = self.height -2*y0
 		r = (x0, y0, w, h)
 		box_w = 100
 		box_h = 50
-		x_offset = 25
-		y_offset = 25
+		x_offset = 30
+		y_offset = 30
 
 		#pygame.draw.rect(display, (255, 255, 255), r, 1)
 		pygame.draw.arc(display, (255, 255, 255), r, 0, PI/2)
@@ -88,7 +117,7 @@ class FakeScene(Scene):
 		pygame.draw.arc(display, (255, 255, 255), r, PI, 3*PI/2)
 		pygame.draw.arc(display, (255, 255, 255), r, 3*PI/2, 0)
 
-		pygame.draw.rect(display, (255, 255, 255), (x0 - x_offset , y0 - y_offset, box_w, box_h), 2) # top left
+		#pygame.draw.rect(display, (255, 255, 255), (x0 - x_offset , y0 - y_offset, box_w, box_h), 2) # top left
 		pygame.draw.rect(display, (255, 255, 255), (x0 + w - box_w + x_offset , y0 - y_offset , box_w, box_h), 2) # top right
 		pygame.draw.rect(display, (255, 255, 255), (x0 - x_offset, y0 + h - box_h + y_offset, box_w, box_h), 2) # bottom left
 		pygame.draw.rect(display, (255, 255, 255), (x0 + w - box_w + x_offset, y0 + h - box_h + y_offset, box_w, box_h), 2) # bottom right
@@ -98,6 +127,12 @@ class FakeScene(Scene):
 
 		pygame.draw.rect(display, (255, 255, 255), (x0 - box_w - x_offset/2, y0 + h/2 - box_h/2, box_w, box_h), 2) # left middle
 		pygame.draw.rect(display, (255, 255, 255), (x0 + w + x_offset/2, y0 + h/2 - box_h/2, box_w, box_h), 2) # right middle
+
+
+		#def __init__(self, player, pos, size, font, fontSize, color):
+		hud = PlayerHUD(None, (x0 - x_offset , y0 - y_offset), (box_w, box_h), self.font, 24, (255, 255, 0), (255, 255, 255), (5, 5))
+		hud.set_text(['$ 1000', 'raise to 60'])
+		hud.render(display)
 
 
 
@@ -209,7 +244,7 @@ if __name__ == '__main__':
 	size = 720, 480
 	c = GameViewController(size)
 	menu = MenuScene(size)
-	fake = FakeScene(size)
+	table = PokerTable(size, [])
 	c.add_scene(menu)
-	c.add_scene(fake)
+	c.add_scene(table)
 	c.run()
