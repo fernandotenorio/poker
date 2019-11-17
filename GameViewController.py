@@ -1,5 +1,6 @@
 import sys
 import pygame
+import pygame.gfxdraw
 import time
 import math
 
@@ -96,43 +97,57 @@ class PokerTable(Scene):
 		super().__init__(size)
 		self.font = pygame.font.SysFont(pygame.font.get_default_font(), 24)
 		self.players = players
+		self.x0 = self.width * 0.2
+		self.y0 = self.height * 0.2
 
-	def render(self, display):		
+		self.table_w = self.width -2*self.x0
+		self.table_h = self.height -2*self.y0
+		self.tableRect = (self.x0, self.y0, self.table_w, self.table_h)
+		self.x_offset = 30
+		self.y_offset = 30
+		self.hud_w = 100
+		self.hud_h = 50
+
+		x0 = self.x0
+		y0 = self.y0
+		w = self.table_w
+		h = self.table_h
+		x_offset = self.x_offset
+		y_offset = self.y_offset
+
+		self.positions = [(x0 + w/2 - self.hud_w/2, y0 + h + self.y_offset/2),
+					(x0 - x_offset, y0 + h - self.hud_h + y_offset, self.hud_w, self.hud_h),
+					(x0 - self.hud_w - x_offset/2, y0 + h/2 - self.hud_h/2, self.hud_w, self.hud_h),
+					(x0 - x_offset , y0 - y_offset, self.hud_w, self.hud_h),
+					(x0 + w/2 - self.hud_w/2, y0 - self.hud_h/1 - y_offset/2, self.hud_w, self.hud_h),
+					(x0 + w - self.hud_w + x_offset , y0 - y_offset , self.hud_w, self.hud_h),
+					(x0 + w + x_offset/2, y0 + h/2 - self.hud_h/2, self.hud_w, self.hud_w),
+					(x0 + w - self.hud_h + x_offset, y0 + h - self.hud_h + y_offset, self.hud_h, self.hud_h)
+		]
+
+		self.huds = []
+		for i in range(8):			
+			hud = PlayerHUD(None, self.positions[i], (self.hud_w, self.hud_h), self.font, 24, (255, 255, 0), (255, 255, 255), (5, 5))		
+			hud.set_text(['P{}: $1000'.format(i), 'folded'])			
+			self.huds.append(hud)
+
+
+
+	def render(self, display):
 		PI = math.pi
-		display.fill((0, 150, 0))	
-		#self.button.render(display)
-		x0 = self.width * 0.2
-		y0 = self.height * 0.3
-		w = self.width -2*x0
-		h = self.height -2*y0
-		r = (x0, y0, w, h)
-		box_w = 100
-		box_h = 50
-		x_offset = 30
-		y_offset = 30
+		display.fill((0, 150, 0))
 
 		#pygame.draw.rect(display, (255, 255, 255), r, 1)
-		pygame.draw.arc(display, (255, 255, 255), r, 0, PI/2)
-		pygame.draw.arc(display, (255, 255, 255), r, PI/2, PI)
-		pygame.draw.arc(display, (255, 255, 255), r, PI, 3*PI/2)
-		pygame.draw.arc(display, (255, 255, 255), r, 3*PI/2, 0)
+		# pygame.draw.arc(display, (255, 255, 255), self.tableRect, 0, PI/2, 1)
+		# pygame.draw.arc(display, (255, 255, 255), self.tableRect, PI/2, PI, 1)
+		# pygame.draw.arc(display, (255, 255, 255), self.tableRect, PI, 3*PI/2, 1)
+		# pygame.draw.arc(display, (255, 255, 255), self.tableRect, 3*PI/2, 0, 1)
 
-		#pygame.draw.rect(display, (255, 255, 255), (x0 - x_offset , y0 - y_offset, box_w, box_h), 2) # top left
-		pygame.draw.rect(display, (255, 255, 255), (x0 + w - box_w + x_offset , y0 - y_offset , box_w, box_h), 2) # top right
-		pygame.draw.rect(display, (255, 255, 255), (x0 - x_offset, y0 + h - box_h + y_offset, box_w, box_h), 2) # bottom left
-		pygame.draw.rect(display, (255, 255, 255), (x0 + w - box_w + x_offset, y0 + h - box_h + y_offset, box_w, box_h), 2) # bottom right
-
-		pygame.draw.rect(display, (255, 255, 255), (x0 + w/2 - box_w/2, y0 - box_h/1 - y_offset/2, box_w, box_h), 2) # top middle
-		pygame.draw.rect(display, (255, 255, 255), (x0 + w/2 - box_w/2, y0 + h + y_offset/2, box_w, box_h), 2) # bottom middle
-
-		pygame.draw.rect(display, (255, 255, 255), (x0 - box_w - x_offset/2, y0 + h/2 - box_h/2, box_w, box_h), 2) # left middle
-		pygame.draw.rect(display, (255, 255, 255), (x0 + w + x_offset/2, y0 + h/2 - box_h/2, box_w, box_h), 2) # right middle
-
-
-		#def __init__(self, player, pos, size, font, fontSize, color):
-		hud = PlayerHUD(None, (x0 - x_offset , y0 - y_offset), (box_w, box_h), self.font, 24, (255, 255, 0), (255, 255, 255), (5, 5))
-		hud.set_text(['$ 1000', 'raise to 60'])
-		hud.render(display)
+		pygame.gfxdraw.aaellipse(display, int(self.width/2), int(self.height/2), int(self.table_w/2), int(self.table_h/2), (255, 255, 255))
+		#pygame.gfxdraw.filled_ellipse(display, int(self.width/2), int(self.height/2), int(self.table_w/2), int(self.table_h/2), (0, 150, 0))
+		
+		for i in range(8):						
+			self.huds[i].render(display)
 
 
 
@@ -142,6 +157,7 @@ class PokerTable(Scene):
 	def handle_event(self, event):
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			self.manager.go_to(self.manager.controller.scenes[0])
+			
 
 
 class MenuScene(Scene):
