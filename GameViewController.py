@@ -125,12 +125,31 @@ class PokerTable(Scene):
 					(x0 + w - self.hud_h + x_offset, y0 + h - self.hud_h + y_offset, self.hud_h, self.hud_h)
 		]
 
-		self.huds = []
-		for i in range(8):			
-			hud = PlayerHUD(None, self.positions[i], (self.hud_w, self.hud_h), self.font, 24, (255, 255, 0), (255, 255, 255), (5, 5))		
-			hud.set_text(['P{}: $1000'.format(i), 'folded'])			
-			self.huds.append(hud)
 
+		nplayers = len(self.players)
+		if nplayers == 3:
+			occ_huds = [0, 3, 5]
+		elif nplayers == 4:
+			occ_huds = [0, 2, 4, 6]
+		elif nplayers == 5:
+			occ_huds = [0, 2, 3, 5, 6]
+		elif nplayers == 6:
+			occ_huds = [0, 2, 3, 4, 5, 6]
+		elif nplayers == 7:
+			occ_huds = [0, 1, 2, 3, 5, 6, 7]
+		elif nplayers == 8:
+			occ_huds = [0, 1, 2, 3, 4, 5, 6, 7]
+
+
+		self.huds = []
+		for i in range(8):	
+			if i in occ_huds:
+				hud = PlayerHUD(None, self.positions[i], (self.hud_w, self.hud_h), self.font, 24, (255, 255, 0), (255, 255, 255), (5, 5))
+				hud.set_text(['P{}: $1000'.format(i), 'folded'])
+				self.huds.append(hud)
+			#else:
+			#	hud.set_text(['Empty', ''])
+			
 
 
 	def render(self, display):
@@ -146,8 +165,8 @@ class PokerTable(Scene):
 		pygame.gfxdraw.aaellipse(display, int(self.width/2), int(self.height/2), int(self.table_w/2), int(self.table_h/2), (255, 255, 255))
 		#pygame.gfxdraw.filled_ellipse(display, int(self.width/2), int(self.height/2), int(self.table_w/2), int(self.table_h/2), (0, 150, 0))
 		
-		for i in range(8):						
-			self.huds[i].render(display)
+		for h in self.huds:
+			h.render(display)
 
 
 
@@ -170,15 +189,21 @@ class MenuScene(Scene):
 
 		top = 60
 		self.fontTitle = pygame.font.SysFont(pygame.font.get_default_font(), 81)
-		self.fontButton = pygame.font.SysFont(pygame.font.get_default_font(), 64)
+		self.fontButton = pygame.font.SysFont(pygame.font.get_default_font(), 36)
 		self.title = BorderedButton('Pokerized', (self.width/2, top), self.fontTitle, MenuScene.TITLE_COLOR, 2, False)
 
 		bottom_y_title = self.title.get_bottom_y()
-		self.button3 = BorderedButton('3 Players', (self.width/2, 50 + bottom_y_title), self.fontButton, MenuScene.BTN_COLOR, 3, True)
+		self.button3 = BorderedButton('3 Players', (self.width/2, 40 + bottom_y_title), self.fontButton, MenuScene.BTN_COLOR, 3, True)
 		bottom_y_btn = self.button3.get_bottom_y()
-		self.button4 = BorderedButton('4 Players', (self.width/2, 50 + bottom_y_btn), self.fontButton, MenuScene.BTN_COLOR, 3, True)
+		self.button4 = BorderedButton('4 Players', (self.width/2, 40 + bottom_y_btn), self.fontButton, MenuScene.BTN_COLOR, 3, True)
 		bottom_y_btn = self.button4.get_bottom_y()
-		self.button5 = BorderedButton('5 Players', (self.width/2, 50 + bottom_y_btn), self.fontButton, MenuScene.BTN_COLOR, 3, True)
+		self.button5 = BorderedButton('5 Players', (self.width/2, 40 + bottom_y_btn), self.fontButton, MenuScene.BTN_COLOR, 3, True)
+		bottom_y_btn = self.button5.get_bottom_y()
+		self.button6 = BorderedButton('6 Players', (self.width/2, 40 + bottom_y_btn), self.fontButton, MenuScene.BTN_COLOR, 3, True)
+		bottom_y_btn = self.button6.get_bottom_y()
+		self.button7 = BorderedButton('7 Players', (self.width/2, 40 + bottom_y_btn), self.fontButton, MenuScene.BTN_COLOR, 3, True)
+		bottom_y_btn = self.button7.get_bottom_y()
+		self.button8 = BorderedButton('8 Players', (self.width/2, 40 + bottom_y_btn), self.fontButton, MenuScene.BTN_COLOR, 3, True)
 
 
 	@staticmethod
@@ -191,6 +216,9 @@ class MenuScene(Scene):
 		self.button3.render(display)
 		self.button4.render(display)
 		self.button5.render(display)
+		self.button6.render(display)
+		self.button7.render(display)
+		self.button8.render(display)
 
 	def update(self):
 		pass
@@ -201,7 +229,7 @@ class MenuScene(Scene):
 		y = mouse[1]
 		selected = None
 
-		for btn in [self.button3, self.button4, self.button5]:
+		for btn in [self.button3, self.button4, self.button5, self.button6, self.button7, self.button8]:
 			if MenuScene.point_inside_rect(x, y, btn.text_rect):
 				btn.color = MenuScene.BTN_HOVER_COLOR
 				selected = btn
@@ -210,7 +238,10 @@ class MenuScene(Scene):
 
 		if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and selected is not None:
 			print('Inside menu selected {}'.format(selected.text))
-			self.manager.go_to(self.manager.controller.scenes[1])
+			nplayers = int(selected.text[0])
+			table = PokerTable(size, [0]*nplayers)
+			#self.manager.go_to(self.manager.controller.scenes[1])
+			self.manager.go_to(table)
 
 
 class GameViewController(object):
@@ -260,7 +291,7 @@ if __name__ == '__main__':
 	size = 720, 480
 	c = GameViewController(size)
 	menu = MenuScene(size)
-	table = PokerTable(size, [])
+	#table = PokerTable(size, [])
 	c.add_scene(menu)
-	c.add_scene(table)
+	#c.add_scene(table)
 	c.run()
