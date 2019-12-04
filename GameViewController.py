@@ -50,12 +50,13 @@ class PlayerHUD(object):
 		self.labels = []
 		self.padding = padding
 
+
 	def set_text(self, text):
 		self.text = text
 		self.labels = []
-
 		self.labels.append(self.font.render(self.text[0], True, self.stackColor))
 		self.labels.append(self.font.render(self.text[1], True, self.actionColor))
+		
 
 	def render(self, context):
 		pygame.draw.rect(context, self.stackColor, (self.pos[0] , self.pos[1], self.size[0], self.size[1]), 2)
@@ -93,10 +94,10 @@ class Scene(object):
 
 
 class PokerTable(Scene):
-	def __init__(self, size, players):
+	def __init__(self, size, nplayers):
 		super().__init__(size)
 		self.font = pygame.font.SysFont(pygame.font.get_default_font(), 24)
-		self.players = players
+		self.nplayers = nplayers
 		self.x0 = self.width * 0.2
 		self.y0 = self.height * 0.2
 
@@ -122,22 +123,20 @@ class PokerTable(Scene):
 					(x0 + w/2 - self.hud_w/2, y0 - self.hud_h/1 - y_offset/2, self.hud_w, self.hud_h),
 					(x0 + w - self.hud_w + x_offset , y0 - y_offset , self.hud_w, self.hud_h),
 					(x0 + w + x_offset/2, y0 + h/2 - self.hud_h/2, self.hud_w, self.hud_w),
-					(x0 + w - self.hud_h + x_offset, y0 + h - self.hud_h + y_offset, self.hud_h, self.hud_h)
-		]
+					(x0 + w - self.hud_h + x_offset, y0 + h - self.hud_h + y_offset, self.hud_h, self.hud_h)]
+		
 
-
-		nplayers = len(self.players)
-		if nplayers == 3:
+		if self.nplayers == 3:
 			occ_huds = [0, 3, 5]
-		elif nplayers == 4:
+		elif self.nplayers == 4:
 			occ_huds = [0, 2, 4, 6]
-		elif nplayers == 5:
+		elif self.nplayers == 5:
 			occ_huds = [0, 2, 3, 5, 6]
-		elif nplayers == 6:
+		elif self.nplayers == 6:
 			occ_huds = [0, 2, 3, 4, 5, 6]
-		elif nplayers == 7:
+		elif self.nplayers == 7:
 			occ_huds = [0, 1, 2, 3, 5, 6, 7]
-		elif nplayers == 8:
+		elif self.nplayers == 8:
 			occ_huds = [0, 1, 2, 3, 4, 5, 6, 7]
 
 
@@ -147,23 +146,12 @@ class PokerTable(Scene):
 				hud = PlayerHUD(None, self.positions[i], (self.hud_w, self.hud_h), self.font, 24, (255, 255, 0), (255, 255, 255), (5, 5))
 				hud.set_text(['P{}: $1000'.format(i), 'folded'])
 				self.huds.append(hud)
-			#else:
-			#	hud.set_text(['Empty', ''])
 			
-
 
 	def render(self, display):
 		PI = math.pi
 		display.fill((0, 150, 0))
-
-		#pygame.draw.rect(display, (255, 255, 255), r, 1)
-		# pygame.draw.arc(display, (255, 255, 255), self.tableRect, 0, PI/2, 1)
-		# pygame.draw.arc(display, (255, 255, 255), self.tableRect, PI/2, PI, 1)
-		# pygame.draw.arc(display, (255, 255, 255), self.tableRect, PI, 3*PI/2, 1)
-		# pygame.draw.arc(display, (255, 255, 255), self.tableRect, 3*PI/2, 0, 1)
-
-		pygame.gfxdraw.aaellipse(display, int(self.width/2), int(self.height/2), int(self.table_w/2), int(self.table_h/2), (255, 255, 255))
-		#pygame.gfxdraw.filled_ellipse(display, int(self.width/2), int(self.height/2), int(self.table_w/2), int(self.table_h/2), (0, 150, 0))
+		pygame.gfxdraw.aaellipse(display, int(self.width/2), int(self.height/2), int(self.table_w/2), int(self.table_h/2), (255, 255, 255))		
 		
 		for h in self.huds:
 			h.render(display)
@@ -239,7 +227,7 @@ class MenuScene(Scene):
 		if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and selected is not None:
 			print('Inside menu selected {}'.format(selected.text))
 			nplayers = int(selected.text[0])
-			table = PokerTable(size, [0]*nplayers)
+			table = PokerTable(size, nplayers)
 			#self.manager.go_to(self.manager.controller.scenes[1])
 			self.manager.go_to(table)
 
